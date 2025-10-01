@@ -49,6 +49,27 @@ const seeds: CursorSeed[] = [
 
 const statuses: CursorBroadcast["status"][] = ["idle", "selecting", "commenting"];
 
+type EdgeServerWebSocket = WebSocket & {
+    accept: () => void;
+};
+
+type EdgeWebSocketPair = {
+    0: WebSocket;
+    1: EdgeServerWebSocket;
+};
+
+function createWebSocketPair(): EdgeWebSocketPair {
+    const globalWithPair = globalThis as typeof globalThis & {
+        WebSocketPair?: new () => EdgeWebSocketPair;
+    };
+
+    if (!globalWithPair.WebSocketPair) {
+        throw new Error("WebSocketPair is not supported in this runtime.");
+    }
+
+    return new globalWithPair.WebSocketPair();
+}
+
 function projectCursor(seed: CursorSeed, tick: number): CursorBroadcast {
     const oscillation = Math.sin(tick + seed.offset);
     const wave = Math.cos(tick / 1.6 + seed.offset * 0.8);
@@ -78,8 +99,9 @@ export function GET(request: NextRequest) {
         return new Response("Expected websocket", { status: 400 });
     }
 
-    const pair = new WebSocketPair();
-    const [client, server] = Object.values(pair) as unknown as [WebSocket, WebSocket];
+    const pair = createWebSocketPair();
+    const client = pair[0];
+    const server: EdgeServerWebSocket = pair[1];
 
     let tick = 0;
 
@@ -127,5 +149,5 @@ export function GET(request: NextRequest) {
     return new Response(null, {
         status: 101,
         webSocket: client,
-    });
+    } as ResponseInit & { webSocket: WebSocket });
 }
