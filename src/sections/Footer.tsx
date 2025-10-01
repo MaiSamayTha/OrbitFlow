@@ -1,4 +1,4 @@
-﻿import Image from "next/image";
+import Image from "next/image";
 import newLogo from "@/assets/images/newlogo.png";
 
 const footerLinks = [
@@ -7,13 +7,13 @@ const footerLinks = [
         label: "Contact",
     },
     {
-        href: "https://swamimalode.online",
+        href: "/",
         label: "Security",
         target: "_blank",
         rel: "noopener noreferrer",
     },
     {
-        href: "https://swamimalode.online",
+        href: "/",
         label: "Status",
         target: "_blank",
         rel: "noopener noreferrer",
