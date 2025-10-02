@@ -1,10 +1,7 @@
 "use client";
 import Button from "@/components/Button";
-import designExample1Image from "@/assets/images/design-example-1.png";
-import designExample2Image from "@/assets/images/design-example-2.png";
-import Image from "next/image";
 import Pointer from "@/components/Pointer";
-import { motion, useAnimate, useSpring } from "framer-motion";
+import { motion, useSpring } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import cursorYouImage from "@/assets/images/cursor-you.svg";
 import type { SpringOptions } from "framer-motion";
@@ -214,9 +211,6 @@ function synthesizeCursor(seed: CursorSeed, tick: number): HandoffCursor {
     };
 }
 export default function Hero() {
-    const [leftDesignScope, leftDesignAnimate] = useAnimate();
-    const [rightDesignScope, rightDesignAnimate] = useAnimate();
-
     const [teamSize, setTeamSize] = useState(12);
     const [sprintLength, setSprintLength] = useState(2);
     const [cursorFrames, setCursorFrames] = useState<HandoffCursor[]>(() =>
@@ -433,18 +427,6 @@ export default function Hero() {
         };
     }, []);
 
-    useEffect(() => {
-        leftDesignAnimate([
-            [leftDesignScope.current, { opacity: [0, 1] }, { duration: 0.5 }],
-            [leftDesignScope.current, { y: 0, x: 0 }, { duration: 0.5 }],
-        ]);
-
-        rightDesignAnimate([
-            [rightDesignScope.current, { opacity: 1 }, { duration: 0.5, delay: 1.2 }],
-            [rightDesignScope.current, { y: 0, x: 0 }, { duration: 0.5 }],
-        ]);
-    }, [leftDesignAnimate, leftDesignScope, rightDesignAnimate, rightDesignScope]);
-
     const pointerFrames = useMemo(() => {
         return cursorFrames.map((frame) => {
             const ranges = pointerOffsets[frame.id];
@@ -481,22 +463,6 @@ export default function Hero() {
             }}
         >
             <div className="container relative">
-                <motion.div
-                    ref={leftDesignScope}
-                    initial={{ opacity: 0, y: 80, x: -120 }}
-                    drag
-                    className="absolute -left-36 top-16 hidden lg:block"
-                >
-                    <Image src={designExample1Image} alt="OrbitFlow dashboard mockup" draggable="false" />
-                </motion.div>
-                <motion.div
-                    ref={rightDesignScope}
-                    initial={{ opacity: 0, x: 160, y: 120 }}
-                    drag
-                    className="absolute -right-64 -top-10 hidden lg:block"
-                >
-                    <Image src={designExample2Image} alt="Team collaboration preview" draggable="false" />
-                </motion.div>
                 <div className="pointer-events-none absolute inset-0 hidden lg:block">
                     {pointerFrames.map((cursor) => (
                         <motion.div
