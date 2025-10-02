@@ -4,8 +4,8 @@ import designExample1Image from "@/assets/images/design-example-1.png";
 import designExample2Image from "@/assets/images/design-example-2.png";
 import Image from "next/image";
 import Pointer from "@/components/Pointer";
-import { AnimatePresence, motion, useAnimate, useSpring } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, useAnimate, useSpring } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import cursorYouImage from "@/assets/images/cursor-you.svg";
 import type { SpringOptions } from "framer-motion";
 
@@ -222,84 +222,6 @@ export default function Hero() {
     const [cursorFrames, setCursorFrames] = useState<HandoffCursor[]>(() =>
         handoffSeeds.map((seed) => synthesizeCursor(seed, seed.offset))
     );
-    const [overlayActive, setOverlayActive] = useState<Record<CursorSeed["id"], boolean>>({
-        nova: false,
-        atlas: false,
-    });
-    const overlayDismissedRef = useRef<Record<CursorSeed["id"], boolean>>({
-        nova: false,
-        atlas: false,
-    });
-    const overlayTimersRef = useRef<Record<CursorSeed["id"], number | null>>({
-        nova: null,
-        atlas: null,
-    });
-
-    const clearOverlayTimer = useCallback((id: CursorSeed["id"]) => {
-        if (typeof window === "undefined") {
-            return;
-        }
-        const timer = overlayTimersRef.current[id];
-        if (timer !== null) {
-            window.clearTimeout(timer);
-            overlayTimersRef.current[id] = null;
-        }
-    }, []);
-
-    const triggerOverlayOnce = useCallback(
-        (id: CursorSeed["id"]) => {
-            if (overlayDismissedRef.current[id] || typeof window === "undefined") {
-                return;
-            }
-
-            setOverlayActive((previous) => ({
-                ...previous,
-                [id]: true,
-            }));
-            clearOverlayTimer(id);
-            overlayTimersRef.current[id] = window.setTimeout(() => {
-                setOverlayActive((previous) => ({
-                    ...previous,
-                    [id]: false,
-                }));
-                overlayDismissedRef.current[id] = true;
-                clearOverlayTimer(id);
-            }, 2600);
-        },
-        [clearOverlayTimer]
-    );
-
-    const processFrames = useCallback(
-        (frames: HandoffCursor[]) => {
-            setCursorFrames(frames);
-            if (typeof window === "undefined") {
-                return;
-            }
-
-            frames.forEach((frame) => {
-                if (frame.status !== "idle" && !overlayDismissedRef.current[frame.id]) {
-                    triggerOverlayOnce(frame.id);
-                }
-            });
-        },
-        [triggerOverlayOnce]
-    );
-
-    useEffect(() => {
-        if (typeof window === "undefined") {
-            return undefined;
-        }
-
-        const timersRefSnapshot = { ...overlayTimersRef.current } as Record<CursorSeed["id"], number | null>;
-
-        return () => {
-            Object.values(timersRefSnapshot).forEach((timer) => {
-                if (timer !== null) {
-                    window.clearTimeout(timer);
-                }
-            });
-        };
-    }, []);
     const fallbackTimerRef = useRef<number | null>(null);
     const heartbeatRef = useRef<number | null>(null);
     const reconnectRef = useRef<number | null>(null);
@@ -368,7 +290,7 @@ export default function Hero() {
             return;
         }
 
-        let fallbackTick = Math.random() * Math.PI;
+        let fallbackTick = 0;
 
         const stopFallback = () => {
             if (fallbackTimerRef.current !== null) {
@@ -384,9 +306,9 @@ export default function Hero() {
 
             fallbackTimerRef.current = window.setInterval(() => {
                 fallbackTick += 0.25;
-                processFrames(handoffSeeds.map((seed) => synthesizeCursor(seed, fallbackTick)));
+                setCursorFrames(handoffSeeds.map((seed) => synthesizeCursor(seed, fallbackTick)));
             }, 900);
-            processFrames(handoffSeeds.map((seed) => synthesizeCursor(seed, fallbackTick)));
+            setCursorFrames(handoffSeeds.map((seed) => synthesizeCursor(seed, fallbackTick)));
         };
 
         const applyPayload = (payload: unknown) => {
@@ -428,7 +350,7 @@ export default function Hero() {
                 .filter(Boolean) as HandoffCursor[];
 
             if (mapped.length) {
-                processFrames(mapped);
+                setCursorFrames(mapped);
             }
         };
 
@@ -509,7 +431,7 @@ export default function Hero() {
             }
             wsRef.current?.close();
         };
-    }, [processFrames]);
+    }, []);
 
     useEffect(() => {
         leftDesignAnimate([
@@ -531,7 +453,7 @@ export default function Hero() {
 
             return {
                 ...frame,
-                baseClass: frame.id === "nova" ? "absolute left-40 top-96 hidden lg:block" : "absolute right-72 top-0 hidden lg:block",
+                positionClass: frame.id === "nova" ? "absolute left-40 top-96" : "absolute right-72 top-0",
                 x,
                 y,
             };
@@ -546,9 +468,6 @@ export default function Hero() {
             return latest;
         }, undefined);
     }, [pointerFrames]);
-
-    const novaCursor = pointerFrames.find((frame) => frame.id === "nova");
-    const atlasCursor = pointerFrames.find((frame) => frame.id === "atlas");
 
     const latestNarrative = latestCursor
         ? cursorNarratives[latestCursor.id][latestCursor.status]
@@ -568,31 +487,7 @@ export default function Hero() {
                     drag
                     className="absolute -left-36 top-16 hidden lg:block"
                 >
-                    <div className="relative">
-                        <Image src={designExample1Image} alt="OrbitFlow dashboard mockup" draggable="false" />
-                        <AnimatePresence>
-                            {novaCursor && overlayActive.nova && (
-                                <motion.div
-                                    key={`${novaCursor.status}-${novaCursor.timestamp}`}
-                                    initial={{ opacity: 0, y: 12, scale: 0.94 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                                    transition={{ duration: 0.4, ease: "easeOut" }}
-                                    className="pointer-events-none absolute inset-6 rounded-[30px] border border-brand-300/60 bg-brand-400/10 shadow-[0_0_28px_rgba(99,102,241,0.35)] backdrop-blur"
-                                >
-                                    <div className="absolute right-6 top-6 rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[11px] uppercase tracking-[0.32em] text-white/60">
-                                        Nova {statusBadges[novaCursor.status].label}
-                                    </div>
-                                    <div className="absolute left-6 bottom-6 max-w-[220px] rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-xs text-white/70 backdrop-blur">
-                                        <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">Live edit</p>
-                                        <p className="mt-2 text-sm text-white/70">
-                                            {cursorNarratives.nova[novaCursor.status].detail}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    <Image src={designExample1Image} alt="OrbitFlow dashboard mockup" draggable="false" />
                 </motion.div>
                 <motion.div
                     ref={rightDesignScope}
@@ -600,37 +495,13 @@ export default function Hero() {
                     drag
                     className="absolute -right-64 -top-10 hidden lg:block"
                 >
-                    <div className="relative">
-                        <Image src={designExample2Image} alt="Team collaboration preview" draggable="false" />
-                        <AnimatePresence>
-                            {atlasCursor && overlayActive.atlas && (
-                                <motion.div
-                                    key={`${atlasCursor.status}-${atlasCursor.timestamp}`}
-                                    initial={{ opacity: 0, y: 16, scale: 0.94 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                                    transition={{ duration: 0.4, ease: "easeOut" }}
-                                    className="pointer-events-none absolute inset-8 rounded-[34px] border border-accent-300/60 bg-accent-500/10 shadow-[0_0_32px_rgba(14,165,233,0.25)] backdrop-blur"
-                                >
-                                    <div className="absolute left-6 top-6 rounded-full border border-white/10 bg-black/70 px-3 py-1 text-[11px] uppercase tracking-[0.32em] text-white/60">
-                                        Atlas {statusBadges[atlasCursor.status].label}
-                                    </div>
-                                    <div className="absolute right-6 bottom-6 max-w-[220px] rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-xs text-white/70 backdrop-blur">
-                                        <p className="text-[11px] uppercase tracking-[0.3em] text-white/40">Motion note</p>
-                                        <p className="mt-2 text-sm text-white/70">
-                                            {cursorNarratives.atlas[atlasCursor.status].detail}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    <Image src={designExample2Image} alt="Team collaboration preview" draggable="false" />
                 </motion.div>
                 <div className="pointer-events-none absolute inset-0 hidden lg:block">
                     {pointerFrames.map((cursor) => (
                         <motion.div
                             key={cursor.id}
-                            className={`${cursor.baseClass} flex flex-col items-start gap-2`}
+                            className={`${cursor.positionClass} flex flex-col items-start gap-2`}
                             initial={{ opacity: 0, x: cursor.x, y: cursor.y }}
                             animate={{ opacity: 1, x: cursor.x, y: cursor.y }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -647,18 +518,14 @@ export default function Hero() {
                                 }`}
                             />
                             <Pointer name={cursor.label} color={cursor.color} />
-                            <AnimatePresence mode="wait" initial={false}>
-                                <motion.div
-                                    key={`${cursor.id}-${cursor.status}`}
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -6 }}
-                                    transition={{ duration: 0.35, ease: "easeOut" }}
-                                    className="rounded-full border border-white/10 bg-black/75 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/60 backdrop-blur"
-                                >
-                                    {cursor.name} {statusBadges[cursor.status].label}
-                                </motion.div>
-                            </AnimatePresence>
+                            <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.35, ease: "easeOut" }}
+                                className="rounded-full border border-white/10 bg-black/75 px-3 py-1 text-[11px] uppercase tracking-[0.28em] text-white/60 backdrop-blur"
+                            >
+                                {cursor.name} {statusBadges[cursor.status].label}
+                            </motion.div>
                         </motion.div>
                     ))}
                 </div>
