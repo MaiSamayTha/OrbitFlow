@@ -220,7 +220,7 @@ export default function Hero() {
     const [teamSize, setTeamSize] = useState(12);
     const [sprintLength, setSprintLength] = useState(2);
     const [cursorFrames, setCursorFrames] = useState<HandoffCursor[]>(() =>
-        handoffSeeds.map((seed) => synthesizeCursor(seed, Math.random() * Math.PI))
+        handoffSeeds.map((seed) => synthesizeCursor(seed, seed.offset))
     );
     const [overlayActive, setOverlayActive] = useState<Record<CursorSeed["id"], boolean>>({
         nova: false,

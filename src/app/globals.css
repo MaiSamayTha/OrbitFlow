@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -23,4 +23,13 @@ body::after {
     background: radial-gradient(35% 40% at 75% 15%, rgba(91, 218, 255, 0.25) 0%, rgba(91, 218, 255, 0) 80%),
         radial-gradient(30% 35% at 25% 80%, rgba(194, 195, 255, 0.2) 0%, rgba(194, 195, 255, 0) 70%);
     z-index: -1;
+}
+::selection {
+    background: rgba(244, 143, 177, 0.42);
+    color: #fff7fc;
+}
+
+::-moz-selection {
+    background: rgba(244, 143, 177, 0.42);
+    color: #fff7fc;
 }
